@@ -1,15 +1,14 @@
 import os
+import time
 import google.generativeai as genai
 from news_fetcher import Article
 
 _PROMPT = """
-以下の経済ニュース記事{count}件を読んで、LINE通知用のメッセージを日本語で作成してください。
+以下の経済ニュース{count}件を読んで、LINE通知用の日本語メッセージを作成してください。
 
 ルール:
 - 冒頭に「【本日の経済ニュース】」を付ける
-- 各記事を番号付きで整理する
-- 1記事につき箇条書き2点以内（各点は1文）
-- 専門用語は平易な言葉で補足する
+- 各記事を番号付きで1〜2行で要約する
 - 各記事の末尾にURLを載せる
 - 最後に「詳細は各リンクから確認できます」を付ける
 
@@ -20,13 +19,21 @@ _PROMPT = """
 def build_message(articles: list[Article]) -> str:
     api_key = os.environ["GEMINI_API_KEY"]
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-2.0-flash")
+    model = genai.GenerativeModel("gemini-2.0-flash-lite")
 
     articles_text = ""
     for i, a in enumerate(articles, 1):
-        body = (a.summary or a.title)[:300]
-        articles_text += f"【記事{i}】\nタイトル: {a.title}\n内容: {body}\nURL: {a.url}\n\n"
+        body = (a.summary or a.title)[:150]
+        articles_text += f"【{i}】{a.title}\n{body}\nURL: {a.url}\n\n"
 
     prompt = _PROMPT.format(count=len(articles), articles=articles_text)
-    response = model.generate_content(prompt)
-    return response.text.strip()
+
+    for attempt in range(3):
+        try:
+            response = model.generate_content(prompt)
+            return response.text.strip()
+        except Exception as e:
+            if attempt < 2:
+                time.sleep(40)
+            else:
+                raise e

@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from dataclasses import dataclass
 
 KEYWORDS = ["経済", "株価", "為替", "ビジネス", "金融"]
-MAX_ARTICLES = 5
+MAX_ARTICLES = 3
 
 @dataclass
 class Article:
