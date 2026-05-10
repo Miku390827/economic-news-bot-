@@ -19,7 +19,7 @@ _PROMPT = """
 def build_message(articles: list[Article]) -> str:
     api_key = os.environ["GEMINI_API_KEY"]
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-2.0-flash-lite")
+    model = genai.GenerativeModel("gemini-2.5-flash-preview-04-17")
 
     articles_text = ""
     for i, a in enumerate(articles, 1):
