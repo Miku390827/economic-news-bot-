@@ -1,6 +1,6 @@
 import os
 import time
-import google.generativeai as genai
+from google import genai
 from news_fetcher import Article
 
 _PROMPT = """
@@ -17,9 +17,7 @@ _PROMPT = """
 
 
 def build_message(articles: list[Article]) -> str:
-    api_key = os.environ["GEMINI_API_KEY"]
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-2.5-flash-preview-04-17")
+    client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
     articles_text = ""
     for i, a in enumerate(articles, 1):
@@ -30,7 +28,10 @@ def build_message(articles: list[Article]) -> str:
 
     for attempt in range(3):
         try:
-            response = model.generate_content(prompt)
+            response = client.models.generate_content(
+                model="gemini-2.0-flash",
+                contents=prompt,
+            )
             return response.text.strip()
         except Exception as e:
             if attempt < 2:
