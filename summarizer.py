@@ -30,7 +30,7 @@ _COMBINED_PROMPT = """
 def _get_model():
     api_key = os.environ["GEMINI_API_KEY"]
     genai.configure(api_key=api_key)
-    return genai.GenerativeModel("gemini-1.5-flash")
+    return genai.GenerativeModel("gemini-2.0-flash")
 
 
 def summarize_article(model, article: Article) -> str:
