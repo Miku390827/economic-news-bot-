@@ -2,54 +2,31 @@ import os
 import google.generativeai as genai
 from news_fetcher import Article
 
-_PROMPT_TEMPLATE = """
-以下の経済ニュース記事を読んで、日本語で簡潔に要約してください。
+_PROMPT = """
+以下の経済ニュース記事{count}件を読んで、LINE通知用のメッセージを日本語で作成してください。
 
 ルール:
-- 箇条書き3点以内（各点は1〜2文）
+- 冒頭に「【本日の経済ニュース】」を付ける
+- 各記事を番号付きで整理する
+- 1記事につき箇条書き2点以内（各点は1文）
 - 専門用語は平易な言葉で補足する
-- 出力形式: 箇条書きのみ（前置き・後書き不要）
+- 各記事の末尾にURLを載せる
+- 最後に「詳細は各リンクから確認できます」を付ける
 
-【記事タイトル】
-{title}
-
-【記事内容】
-{body}
+{articles}
 """
-
-_COMBINED_PROMPT = """
-以下の経済ニュース要約をまとめて、LINE通知用のメッセージを作成してください。
-
-【本日の経済ニュース要約】を冒頭に付け、各記事を番号付きで整理してください。
-最後に「詳細は各リンクから確認できます」と添えてください。
-
-{summaries}
-"""
-
-
-def _get_model():
-    api_key = os.environ["GEMINI_API_KEY"]
-    genai.configure(api_key=api_key)
-    return genai.GenerativeModel("gemini-2.0-flash")
-
-
-def summarize_article(model, article: Article) -> str:
-    body = article.summary or article.title
-    prompt = _PROMPT_TEMPLATE.format(title=article.title, body=body)
-    response = model.generate_content(prompt)
-    return response.text.strip()
 
 
 def build_message(articles: list[Article]) -> str:
-    model = _get_model()
+    api_key = os.environ["GEMINI_API_KEY"]
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel("gemini-2.0-flash")
 
-    sections = []
-    for i, article in enumerate(articles, 1):
-        bullets = summarize_article(model, article)
-        section = f"📰 {i}. {article.title}\n{bullets}\n🔗 {article.url}"
-        sections.append(section)
+    articles_text = ""
+    for i, a in enumerate(articles, 1):
+        body = (a.summary or a.title)[:300]
+        articles_text += f"【記事{i}】\nタイトル: {a.title}\n内容: {body}\nURL: {a.url}\n\n"
 
-    summaries_text = "\n\n".join(sections)
-    prompt = _COMBINED_PROMPT.format(summaries=summaries_text)
+    prompt = _PROMPT.format(count=len(articles), articles=articles_text)
     response = model.generate_content(prompt)
     return response.text.strip()
